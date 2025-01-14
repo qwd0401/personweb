@@ -1,36 +1,45 @@
-const mongoose = require('mongoose');
-const Admin = require('../models/Admin');
+require("dotenv").config();
+const mongoose = require("mongoose");
+const Admin = require("../models/Admin");
 
-mongoose.connect('mongodb://root:nvtqlxlq@personalweb-mongodb.ns-itw5blp2.svc:27017', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
+const createAdmin = async () => {
+  try {
+    console.log("正在连接数据库...");
+    // 连接数据库
+    await mongoose.connect("mongodb://127.0.0.1:27017/personalweb", {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log("数据库连接成功");
 
-async function createAdmin() {
-    try {
-        // 先检查是否已存在管理员账号
-        const existingAdmin = await Admin.findOne({ username: 'admin' });
-        
-        if (existingAdmin) {
-            // 如果存在，则更新密码
-            existingAdmin.password = '123456';
-            await existingAdmin.save();
-            console.log('管理员账号密码已更新！');
-            process.exit(0);
-        } else {
-            // 如果不存在，则创建新账号
-            const admin = new Admin({
-                username: 'admin',
-                password: '123456'
-            });
-            await admin.save();
-            console.log('管理员账号创建成功！');
-            process.exit(0);
-        }
-    } catch (error) {
-        console.error('操作失败:', error);
-        process.exit(1);
+    // 创建管理员账号
+    const adminData = {
+      username: "admin",
+      password: "admin123456", // 密码至少6位（根据模型要求）
+    };
+
+    // 检查是否已存在管理员账号
+    const existingAdmin = await Admin.findOne({ username: adminData.username });
+    if (existingAdmin) {
+      console.log("管理员账号已存在");
+      process.exit(0);
     }
-}
 
-createAdmin(); 
+    // 创建新管理员账号
+    const admin = await Admin.create(adminData);
+    console.log("管理员账号创建成功：", {
+      username: admin.username,
+      id: admin._id,
+    });
+    console.log("请记住以下登录信息：");
+    console.log("用户名：admin");
+    console.log("密码：admin123456");
+  } catch (error) {
+    console.error("创建管理员账号失败：", error);
+  } finally {
+    await mongoose.connection.close();
+    process.exit(0);
+  }
+};
+
+createAdmin();
